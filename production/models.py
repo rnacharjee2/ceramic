@@ -41,6 +41,7 @@ class Code(models.Model):
 
 class ItemName(models.Model):
     name = models.CharField(max_length=100)
+    slug_name = models.SlugField(max_length=150, null=True, blank=True)
     shape = models.ForeignKey(Shape, on_delete=models.CASCADE)
     code = models.ForeignKey(Code, on_delete=models.CASCADE)
     shapeCode = models.CharField(max_length=10, null=True, blank=True)
@@ -52,10 +53,11 @@ class ItemName(models.Model):
 
     def save(self, *args, **kwargs):
         self.shapeCode = self.code.name + self.shape.name
+        self.slug_name = self.shapeCode + '-' + self.name
         super(ItemName, self).save(*args, **kwargs)
 
     def __str__(self):
-        return self.name
+        return self.slug_name
 
 
 class RawMaterial(models.Model):
