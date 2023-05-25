@@ -1,26 +1,208 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-
+    <title>Table Form with Autocomplete and Validation</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
 </head>
 
 <body>
+    <div class="container">
+        <h2>Table Form with Autocomplete and Validation</h2>
+        <table id="data-table" class="table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="all-data">
+                    <td>
+                        <input type="text" class="form-control autocomplete" name="name[]" placeholder="Enter name"
+                            autocomplete="off">
+                        <div class="autocomplete-suggestions"></div>
+                    </td>
+                    <td>
+                        <input type="text" class="form-control autocomplete" name="email[]" placeholder="Enter email"
+                            autocomplete="off">
+                        <div class="autocomplete-suggestions"></div>
+                    </td>
+                    <td>
+                        <button class="btn btn-danger btn-delete">Delete</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <button id="btn-add" class="btn btn-primary">Add Row</button>
+        <button id="btn-save" class="btn btn-success">Save</button>
+    </div>
 
-    <form action="">
-        <div>
-
-        </div>
-        <input type="submit" value="Submit">
-    </form>
-
-
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script>
+        $(document).ready(function () {
+            const nameData = ['John', 'Jane', 'Alice', 'Bob']; // Array for name autocomplete
+            const emailData = ['john@example.com', 'jane@example.com', 'alice@example.com', 'bob@example.com']; // Array for email autocomplete
 
+            // Function to add a new row
+            function addRow() {
+                const newRow = `<tr>
+                          <td>
+                            <input type="text" class="form-control autocomplete" name="name[]" placeholder="Enter name" autocomplete="off">
+                            <div class="autocomplete-suggestions"></div>
+                          </td>
+                          <td>
+                            <input type="text" class="form-control autocomplete" name="email[]" placeholder="Enter email" autocomplete="off">
+                            <div class="autocomplete-suggestions"></div>
+                          </td>
+                          <td>
+                            <button class="btn btn-danger btn-delete">Delete</button>
+                          </td>
+                        </tr>`;
+                $('#data-table tbody').append(newRow);
+            }
+
+            // Function to delete a row
+            function deleteRow() {
+                $(this).closest('tr').remove();
+            }
+
+
+            // Autocomplete function
+            function autocomplete(input, suggestions, dataArray) {
+                input.on('input', function () {
+                    const term = input.val().trim().toLowerCase();
+                    const filteredSuggestions = dataArray.filter(item => item.toLowerCase().includes(term));
+
+                    let html = '';
+                    filteredSuggestions.forEach(suggestion => {
+                        html += `<div class="autocomplete-item">${suggestion}</div>`;
+                    });
+
+                    suggestions.html(html);
+                    suggestions.toggleClass('show', filteredSuggestions.length > 0);
+                });
+
+                suggestions.on('click', '.autocomplete-item', function () {
+                    const value = $(this).text();
+                    input.val(value);
+                    suggestions.removeClass('show');
+                });
+
+
+            }
+            document.addEventListener('click', function (event) {
+                var clickTarget = event.target;
+
+                // Check if the click target is an input element
+
+                // Get the parent div
+                var parentDiv = document.querySelector('.all-data');
+
+                // Check if the parent div exists
+                if (parentDiv) {
+                    // Get all child elements to remove (e.g., by class name)
+                    var childrenToRemove = parentDiv.querySelectorAll('.autocomplete-item');
+
+                    // Remove all child elements
+                    childrenToRemove.forEach(function (child) {
+                        child.remove();
+                    });
+                }
+
+            });
+
+
+
+
+            // Add row button click event
+            $('#btn-add').click(function () {
+                addRow();
+            });
+
+            // Delete row button click event (delegated event on dynamic content)
+            $(document).on('click', '.btn-delete', deleteRow);
+
+            // Autocomplete for name field
+            $(document).on('focus', '.autocomplete[name="name[]"]', function () {
+                const input = $(this);
+                const suggestions = input.next('.autocomplete-suggestions');
+                autocomplete(input, suggestions, nameData);
+            });
+
+            // Autocomplete for email field
+            $(document).on('focus', '.autocomplete[name="email[]"]', function () {
+                const input = $(this);
+                const suggestions = input.next('.autocomplete-suggestions');
+                autocomplete(input, suggestions, emailData);
+            });
+
+
+
+            // Save button click event
+            $('#btn-save').click(function () {
+                let isValid = true;
+
+                // Validate name and email fields
+                $('#data-table tbody tr').each(function () {
+                    const nameInput = $(this).find('input[name="name[]"]');
+                    const emailInput = $(this).find('input[name="email[]"]');
+                    const name = nameInput.val().trim();
+                    const email = emailInput.val().trim();
+
+                    // Validate name field
+                    if (!name) {
+                        nameInput.addClass('is-invalid');
+                        isValid = false;
+                    } else {
+                        nameInput.removeClass('is-invalid');
+                    }
+
+                    // Validate email field
+                    if (!email) {
+                        emailInput.addClass('is-invalid');
+                        isValid = false;
+                    } else {
+                        emailInput.removeClass('is-invalid');
+                    }
+                });
+
+                if (!isValid) {
+                    return;
+                }
+
+                const data = [];
+                $('#data-table tbody tr').each(function () {
+                    const name = $(this).find('input[name="name[]"]').val();
+                    const email = $(this).find('input[name="email[]"]').val();
+                    data.push({ name, email });
+                });
+                console.log(data);
+
+                const csrfToken = "{{csrf_token}}";
+
+                // Make AJAX call to the backend
+                $.ajax({
+                    url: '',
+                    type: 'POST',
+                    data: JSON.stringify(data),
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    success: function (response) {
+                        console.log("success", response);
+                        // Handle success response
+                    },
+                    error: function (error) {
+                        console.log("error", error);
+                        // Handle error
+                    }
+                });
+            });
+        });
     </script>
 </body>
 

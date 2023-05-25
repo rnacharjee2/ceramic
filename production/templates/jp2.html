@@ -1,0 +1,661 @@
+<!-- <!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        th,
+        td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .button-container {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .button-container button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        function addRow() {
+            var table = document.getElementById("data-table");
+            var row = table.insertRow(-1);
+            var nameCell = row.insertCell(0);
+            var ageCell = row.insertCell(1);
+            var emailCell = row.insertCell(2);
+            var deleteCell = row.insertCell(3);
+            nameCell.innerHTML = '<input type="text" name="name[]">';
+            ageCell.innerHTML = '<input type="text" name="age[]">';
+            emailCell.innerHTML = '<input type="text" name="email[]">';
+            deleteCell.innerHTML = '<button onclick="deleteRow(this)">Delete</button>';
+        }
+
+        function deleteRow(button) {
+            var row = button.parentNode.parentNode;
+            row.parentNode.removeChild(row);
+        }
+
+        function submitForm() {
+            var table = document.getElementById("data-table");
+            var rows = table.rows;
+            var data = [];
+            console.log(data);
+            for (var i = 1; i < rows.length; i++) {
+                var name = rows[i].querySelector('input[name="name[]"]').value;
+                var age = rows[i].querySelector('input[name="age[]"]').value;
+                var email = rows[i].querySelector('input[name="email[]"]').value;
+                var rowData = { name: name, age: age, email: email };
+                data.push(rowData);
+
+            }
+            console.log(data);
+            console.log(rows)
+
+            $.ajax({
+                url: "",
+                type: "POST",
+                data: JSON.stringify(data),
+                contentType: "application/json",
+                beforeSend: function (xhr) {
+                    xhr.setRequestHeader("X-CSRFToken", '{{ csrf_token }}');
+                },
+                success: function (response) {
+                    console.log("Data submitted successfully:", response);
+                    // Handle success response from the backend
+                },
+                error: function (error) {
+                    // console.error("Error submitting data:", error);
+                    // Handle error response from the backend
+                }
+            });
+        }
+    </script>
+</head>
+
+<body>
+    <h2>Data Entry Form</h2>
+
+    <form>
+        {% csrf_token %}
+        <table id="data-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Age</th>
+                    <th>Email</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><input type="text" name="name[]"></td>
+                    <td><input type="text" name="age[]"></td>
+                    <td><input type="text" name="email[]"></td>
+                    <td><button onclick="deleteRow(this)">Delete</button></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="button-container">
+            <button type="button" onclick="addRow()">Add Row</button>
+            <button type="button" onclick="submitForm()">Submit</button>
+        </div>
+    </form>
+</body>
+
+</html> -->
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      table {
+        border-collapse: collapse;
+        width: 100%;
+      }
+
+      th,
+      td {
+        border: 1px solid black;
+        padding: 8px;
+        text-align: left;
+      }
+
+      th {
+        background-color: #f2f2f2;
+      }
+
+      .button-container {
+        margin-top: 20px;
+        text-align: center;
+      }
+
+      .button-container button {
+        padding: 10px 20px;
+        font-size: 16px;
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        cursor: pointer;
+      }
+
+      .error {
+        color: red;
+        font-size: 12px;
+      }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+      function addRow() {
+        var table = document.getElementById("data-table");
+        var row = table.insertRow(-1);
+        var nameCell = row.insertCell(0);
+        var ageCell = row.insertCell(1);
+        var emailCell = row.insertCell(2);
+        var deleteCell = row.insertCell(3);
+        nameCell.innerHTML =
+          '<input type="text" name="name[]" oninput="suggestNames(this)" onblur="validateInput(this)">';
+        ageCell.innerHTML =
+          '<input type="text" name="age[]" onblur="validateInput(this)">';
+        emailCell.innerHTML =
+          '<input type="text" name="email[]" onblur="validateInput(this)">';
+        deleteCell.innerHTML =
+          '<button onclick="deleteRow(this)">Delete</button>';
+      }
+
+      function deleteRow(button) {
+        var row = button.parentNode.parentNode;
+        row.parentNode.removeChild(row);
+      }
+
+      function suggestNames(input) {
+        var suggestions = ["John", "Jane", "David", "Sarah"]; // Example suggestions
+        var inputValue = input.value;
+        var suggestionContainer = input.parentNode.querySelector(
+          ".suggestion-container"
+        );
+
+        if (inputValue) {
+          var matchedSuggestions = suggestions.filter(function (suggestion) {
+            return suggestion
+              .toLowerCase()
+              .startsWith(inputValue.toLowerCase());
+          });
+
+          if (matchedSuggestions.length > 0) {
+            var suggestionList = matchedSuggestions
+              .map(function (suggestion) {
+                return (
+                  '<li onclick="selectSuggestion(this)">' + suggestion + "</li>"
+                );
+              })
+              .join("");
+
+            suggestionContainer.innerHTML = "<ul>" + suggestionList + "</ul>";
+            suggestionContainer.style.display = "block";
+          } else {
+            suggestionContainer.style.display = "none";
+          }
+        } else {
+          suggestionContainer.style.display = "none";
+        }
+      }
+
+      function selectSuggestion(suggestion) {
+        var input = suggestion.parentNode.parentNode.querySelector("input");
+        input.value = suggestion.innerText;
+        suggestion.parentNode.style.display = "none";
+      }
+
+      function validateInput(input) {
+        var inputValue = input.value;
+        var errorContainer = input.parentNode.querySelector(".error");
+
+        if (inputValue.trim() === "") {
+          errorContainer.innerText = "This field is required.";
+        } else {
+          errorContainer.innerText = "";
+        }
+      }
+
+      function submitForm() {
+        var table = document.getElementById("data-table");
+        var rows = table.rows;
+        var data = [];
+        var isValid = true;
+
+        for (var i = 1; i < rows.length; i++) {
+          var nameInput = rows[i].querySelector('input[name="name[]"]');
+          var ageInput = rows[i].querySelector('input[name="age[]"]');
+          var emailInput = rows[i].querySelector('input[name="email[]"]');
+
+          var name = nameInput.value;
+          var age = ageInput.value;
+          var email = emailInput.value;
+
+          validateInput(nameInput);
+          validateInput(ageInput);
+          validateInput(emailInput);
+
+          if (name.trim() === "" || age.trim() === "" || email.trim() === "") {
+            isValid = false;
+          } else {
+            var rowData = { name: name, age: age, email: email };
+            data.push(rowData);
+          }
+        }
+
+        if (!isValid) {
+          console.log("Please fill in all required fields.");
+          return;
+        }
+
+        console.log(data);
+
+        $.ajax({
+          url: "",
+          type: "POST",
+          data: JSON.stringify(data),
+          contentType: "application/json",
+          beforeSend: function (xhr) {
+            xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}");
+          },
+          success: function (response) {
+            console.log("Data submitted successfully:", response);
+            // Handle success response from the backend
+          },
+          error: function (error) {
+            console.error("Error submitting data:", error);
+            // Handle error response from the backend
+          },
+        });
+      }
+    </script>
+  </head>
+
+  <body>
+    <h2>Data Entry Form</h2>
+
+    <form>
+      {% csrf_token %}
+      <table id="data-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Age</th>
+            <th>Email</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <input
+                type="text"
+                name="name[]"
+                oninput="suggestNames(this)"
+                onblur="validateInput(this)"
+              />
+            </td>
+            <td>
+              <input type="text" name="age[]" onblur="validateInput(this)" />
+            </td>
+            <td>
+              <input type="text" name="email[]" onblur="validateInput(this)" />
+            </td>
+            <td><button onclick="deleteRow(this)">Delete</button></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="button-container">
+        <button type="button" onclick="addRow()">Add Row</button>
+        <button type="button" onclick="submitForm()">Submit</button>
+      </div>
+    </form>
+
+    <div class="suggestion-container" style="display: none"></div>
+    <div class="error"></div>
+  </body>
+</html>
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      table {
+        border-collapse: collapse;
+        width: 100%;
+      }
+
+      th,
+      td {
+        border: 1px solid black;
+        padding: 8px;
+        text-align: left;
+      }
+
+      th {
+        background-color: #f2f2f2;
+      }
+
+      .button-container {
+        margin-top: 20px;
+        text-align: center;
+      }
+
+      .button-container button {
+        padding: 10px 20px;
+        font-size: 16px;
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        cursor: pointer;
+      }
+
+      .error {
+        color: red;
+        font-size: 12px;
+      }
+
+      .suggestion-container {
+        position: relative;
+      }
+
+      .suggestion-list {
+        position: absolute;
+        z-index: 1;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        list-style-type: none;
+        padding: 0;
+      }
+
+      .suggestion-list li {
+        padding: 5px;
+        cursor: pointer;
+      }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+      // Array data for suggestions and validation
+      var suggestions1 = ["John", "Jane", "David", "Sarah"];
+      var suggestions2 = ["Apple", "Banana", "Orange", "Mango"];
+      var suggestions3 = ["Red", "Blue", "Green", "Yellow"];
+
+      function addRow() {
+        var table = document.getElementById("data-table");
+        var row = table.insertRow(-1);
+
+        // Text Input 1
+        var cell1 = row.insertCell(0);
+        var input1 = document.createElement("input");
+        input1.type = "text";
+        input1.name = "input1[]";
+        input1.oninput = function () {
+          suggestNames(this, suggestions1);
+          validateInput(this, suggestions1);
+        };
+        input1.onblur = function () {
+          validateInput(this, suggestions1);
+        };
+        cell1.appendChild(input1);
+        var errorContainer1 = document.createElement("div");
+        errorContainer1.classList.add("error");
+        cell1.appendChild(errorContainer1);
+
+        // Text Input 2
+        var cell2 = row.insertCell(1);
+        var input2 = document.createElement("input");
+        input2.type = "text";
+        input2.name = "input2[]";
+        input2.oninput = function () {
+          suggestNames(this, suggestions2);
+          validateInput(this, suggestions2);
+        };
+        input2.onblur = function () {
+          validateInput(this, suggestions2);
+        };
+        cell2.appendChild(input2);
+        var errorContainer2 = document.createElement("div");
+        errorContainer2.classList.add("error");
+        cell2.appendChild(errorContainer2);
+
+        // Text Input 3
+        var cell3 = row.insertCell(2);
+        var input3 = document.createElement("input");
+        input3.type = "text";
+        input3.name = "input3[]";
+        input3.oninput = function () {
+          suggestNames(this, suggestions3);
+          validateInput(this, suggestions3);
+        };
+        input3.onblur = function () {
+          validateInput(this, suggestions3);
+        };
+        cell3.appendChild(input3);
+        var errorContainer3 = document.createElement("div");
+        errorContainer3.classList.add("error");
+        cell3.appendChild(errorContainer3);
+
+        // Select Input 4
+        var cell4 = row.insertCell(3);
+        var select = document.createElement("select");
+        select.name = "input4[]";
+        var optionA = document.createElement("option");
+        optionA.value = "A";
+        optionA.text = "A";
+        var optionB = document.createElement("option");
+        optionB.value = "B";
+        optionB.text = "B";
+        var optionC = document.createElement("option");
+        optionC.value = "C";
+        optionC.text = "C";
+        select.appendChild(optionA);
+        select.appendChild(optionB);
+        select.appendChild(optionC);
+        cell4.appendChild(select);
+
+        // Date Input 5
+        var cell5 = row.insertCell(4);
+        var input5 = document.createElement("input");
+        input5.type = "date";
+        input5.name = "input5[]";
+        cell5.appendChild(input5);
+
+        // Delete Button
+        var cell6 = row.insertCell(5);
+        var deleteButton = document.createElement("button");
+        deleteButton.innerText = "Delete";
+        deleteButton.onclick = function () {
+          deleteRow(this);
+        };
+        cell6.appendChild(deleteButton);
+      }
+
+      function deleteRow(button) {
+        var row = button.parentNode.parentNode;
+        row.parentNode.removeChild(row);
+      }
+
+      function suggestNames(input, suggestions) {
+        var inputValue = input.value;
+        var suggestionContainer = input.parentNode.querySelector(
+          ".suggestion-container"
+        );
+
+        if (inputValue) {
+          var matchedSuggestions = suggestions.filter(function (suggestion) {
+            return suggestion
+              .toLowerCase()
+              .startsWith(inputValue.toLowerCase());
+          });
+
+          if (matchedSuggestions.length > 0) {
+            var suggestionList = matchedSuggestions
+              .map(function (suggestion) {
+                return (
+                  '<li onclick="selectSuggestion(this)">' + suggestion + "</li>"
+                );
+              })
+              .join("");
+
+            suggestionContainer.innerHTML =
+              '<ul class="suggestion-list">' + suggestionList + "</ul>";
+          } else {
+            suggestionContainer.innerHTML = "";
+          }
+        } else {
+          suggestionContainer.innerHTML = "";
+        }
+      }
+
+      function selectSuggestion(suggestion) {
+        var input = suggestion.parentNode.parentNode.querySelector("input");
+        input.value = suggestion.innerText;
+        suggestion.parentNode.innerHTML = "";
+      }
+
+      function validateInput(input, validationArray) {
+        var inputValue = input.value;
+        var errorContainer = input.parentNode.querySelector(".error");
+
+        if (inputValue.trim() === "") {
+          errorContainer.innerText = "This field is required.";
+        } else {
+          if (!validationArray.includes(inputValue)) {
+            errorContainer.innerText = "Invalid value.";
+          } else {
+            errorContainer.innerText = "";
+          }
+        }
+      }
+
+      function submitForm() {
+        var table = document.getElementById("data-table");
+        var rows = table.rows;
+        var data = [];
+
+        for (var i = 1; i < rows.length; i++) {
+          var input1 = rows[i].querySelector('input[name="input1[]"]').value;
+          var input2 = rows[i].querySelector('input[name="input2[]"]').value;
+          var input3 = rows[i].querySelector('input[name="input3[]"]').value;
+          var input4 = rows[i].querySelector('select[name="input4[]"]').value;
+          var input5 = rows[i].querySelector('input[name="input5[]"]').value;
+
+          var rowData = {
+            input1: input1,
+            input2: input2,
+            input3: input3,
+            input4: input4,
+            input5: input5,
+          };
+
+          data.push(rowData);
+        }
+
+        console.log(data);
+
+        // Make AJAX call to backend
+        $.ajax({
+          url: "",
+          type: "POST",
+          data: JSON.stringify(data),
+          contentType: "application/json; charset=utf-8",
+          dataType: "json",
+          beforeSend: function (xhr) {
+            xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}");
+          },
+          success: function (response) {
+            console.log("Data sent successfully!");
+            // Handle the response from the backend
+          },
+          error: function (error) {
+            console.log("Error sending data: " + error);
+          },
+        });
+      }
+    </script>
+  </head>
+
+  <body>
+    <table id="data-table">
+      <tr>
+        <th>Input 1</th>
+        <th>Input 2</th>
+        <th>Input 3</th>
+        <th>Input 4</th>
+        <th>Input 5</th>
+        <th></th>
+      </tr>
+      <tr>
+        <td>
+          <div class="suggestion-container">
+            <input
+              type="text"
+              name="input1[]"
+              oninput="suggestNames(this, suggestions1)"
+              onblur="validateInput(this, suggestions1)"
+            />
+          </div>
+          <div class="error"></div>
+        </td>
+        <td>
+          <div class="suggestion-container">
+            <input
+              type="text"
+              name="input2[]"
+              oninput="suggestNames(this, suggestions2)"
+              onblur="validateInput(this, suggestions2)"
+            />
+          </div>
+          <div class="error"></div>
+        </td>
+        <td>
+          <div class="suggestion-container">
+            <input
+              type="text"
+              name="input3[]"
+              oninput="suggestNames(this, suggestions3)"
+              onblur="validateInput(this, suggestions3)"
+            />
+          </div>
+          <div class="error"></div>
+        </td>
+        <td>
+          <select name="input4[]">
+            <option></option>
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+          </select>
+        </td>
+        <td><input type="date" name="input5[]" /></td>
+        <td></td>
+      </tr>
+    </table>
+
+    <div class="button-container">
+      <button onclick="addRow()">Add Row</button>
+      <button onclick="submitForm()">Submit</button>
+    </div>
+  </body>
+</html>
